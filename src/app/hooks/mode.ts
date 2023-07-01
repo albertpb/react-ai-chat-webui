@@ -1,7 +1,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export const modes = ["Chat", "Model"] as const;
+export const modes = ["Chat", "Characters"] as const;
 export type Mode = (typeof modes)[number];
 
 export default function useMode() {
@@ -13,8 +13,8 @@ export default function useMode() {
     if (pathName.includes("chat") || pathName === "/") {
       setMode("Chat");
     }
-    if (pathName.includes("model")) {
-      setMode("Model");
+    if (pathName.includes("characters")) {
+      setMode("Characters");
     }
   }, [pathName]);
 
