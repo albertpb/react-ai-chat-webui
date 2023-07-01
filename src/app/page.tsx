@@ -1,113 +1,259 @@
-import Image from 'next/image'
+"use client";
+
+import { createRef } from "react";
+import Image from "next/image";
+import { useSelector } from "react-redux";
+import { RootState } from "./store";
+import { useAppDispatch } from "./store/hooks";
+import { loadCharacter } from "./store/characters";
+import { useCallback, useEffect, useState } from "react";
+import { useWebSocket } from "react-use-websocket/dist/lib/use-websocket";
+import { ReadyState } from "react-use-websocket";
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
+  const characterState = useSelector((state: RootState) => state.character);
+  const modelState = useSelector((state: RootState) => state.model);
+  const chatState = useSelector((state: RootState) => state.chat);
+  const dispatch = useAppDispatch();
+  const [input, setInput] = useState<string>("");
+  const [history, setHistory] = useState<Record<any, any>[]>([]);
+  const { lastMessage, readyState, sendJsonMessage } = useWebSocket(
+    `${process.env.NEXT_PUBLIC_WSS_HOST}`
+  );
+  const textRef = createRef<HTMLDivElement>();
+
+  useEffect(() => {
+    if (lastMessage !== null) {
+      const data = JSON.parse(lastMessage.data);
+      if (data.event !== "stream_end") {
+        setHistory((prev) => prev.concat(data));
+        textRef.current?.scrollBy({ top: textRef.current?.scrollHeight });
+      }
+    }
+  }, [lastMessage, setHistory, textRef]);
+
+  const onSelectCharacter = useCallback(
+    (characterName: string) => {
+      dispatch(loadCharacter(characterName));
+    },
+    [dispatch]
+  );
+
+  useEffect(() => {
+    setHistory([]);
+    setInput("");
+  }, [characterState.character, modelState.modelSelected]);
+
+  const connectionStatus = {
+    [ReadyState.CONNECTING]: "Connecting",
+    [ReadyState.OPEN]: "Open",
+    [ReadyState.CLOSING]: "Closing",
+    [ReadyState.CLOSED]: "Closed",
+    [ReadyState.UNINSTANTIATED]: "Uninstantiated",
+  }[readyState];
+
+  const handleClickSendMessage = useCallback(
+    (userInput: string, history: Record<any, any>[]) => {
+      if (characterState.character !== "None") {
+        let hist = {
+          internal: [],
+          visible: [],
+        };
+
+        if (history.length > 0) {
+          hist = {
+            internal: history[history.length - 1].history.internal,
+            visible: history[history.length - 1].history.visible,
+          };
+        }
+
+        sendJsonMessage({
+          user_input: userInput,
+          max_new_tokens: 250,
+          history: hist,
+          character: characterState.character.name,
+          instruction_template: "Vicuna-v1.1",
+          your_name: "You",
+          regenerate: false,
+          _continue: false,
+          mode: "chat",
+          stop_at_newline: false,
+          chat_generation_attempts: 1,
+          "chat-instruct_command": ``,
+          preset: "None",
+          do_sample: true,
+          temperature: 0.7,
+          top_p: 0.9,
+          typical_p: 1,
+          epsilon_cutoff: 0,
+          eta_cutoff: 0,
+          tfs: 1,
+          top_a: 0,
+          repetition_penalty: 1.15,
+          repetition_penalty_range: 0,
+          top_k: 20,
+          min_length: 0,
+          no_repeat_ngram_size: 0,
+          num_beams: 1,
+          penalty_alpha: 0,
+          length_penalty: 1,
+          early_stopping: false,
+          mirostat_mode: 0,
+          mirostat_tau: 5,
+          mirostat_eta: 0.1,
+          seed: -1,
+          add_bos_token: true,
+          truncation_length: 2048,
+          ban_eso_token: false,
+          skip_special_tokens: true,
+          stopping_strings: [],
+        });
+      }
+
+      setInput("");
+    },
+    [sendJsonMessage, characterState.character]
+  );
+
+  const onInputEnterHandler = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter") {
+      handleClickSendMessage(input, history);
+    }
+  };
+
+  const characterDom =
+    characterState.character !== "None" ? (
+      <div className="my-4">
+        <div className="avatar">
+          <div>
             <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+              className="w-24 rounded"
+              unoptimized={true}
+              src={`data:image/jpeg;base64,${characterState.character.image.data}`}
+              width={300}
+              height={300}
+              alt="Character"
+            ></Image>
+          </div>
+        </div>
+        <div className="prose my-4">
+          <h4>Context:</h4>
+          <p>{characterState.character.context}</p>
+        </div>
+        <div className="prose my-4">
+          <h4>Greeting:</h4>
+          <p>{characterState.character.greeting}</p>
+        </div>
+        <div className="prose my-4">
+          <h4>Context:</h4>
+          <p>{characterState.character.context}</p>
+        </div>
+        <div className="prose my-4">
+          <h4>Example dialogue:</h4>
+          <p>{characterState.character.example_dialogue}</p>
         </div>
       </div>
+    ) : null;
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
+  const greeting =
+    characterState.character !== "None" ? (
+      <p>{characterState.character.greeting}</p>
+    ) : null;
+
+  const text =
+    history[history.length - 1] &&
+    history[history.length - 1].event &&
+    history[history.length - 1].event === "text_stream"
+      ? history[history.length - 1].history.visible.map(
+          (arr: string[], indx: number) => {
+            if (characterState.character !== "None") {
+              return (
+                <div key={`chat_${indx}`}>
+                  <div className="chat chat-end">
+                    <div className="chat-bubble chat-bubble-secondary">
+                      {arr[0]}
+                    </div>
+                  </div>
+                  <div className="chat chat-start">
+                    <div className="chat-image avatar">
+                      <div className="w-10 rounded-full">
+                        <Image
+                          className="w-24 rounded"
+                          unoptimized={true}
+                          src={`data:image/jpeg;base64,${characterState.character.image.data}`}
+                          width={30}
+                          height={30}
+                          alt="Character"
+                        ></Image>
+                      </div>
+                    </div>
+                    <div className="chat-bubble chat-bubble-primary">
+                      {arr[1]}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+          }
+        )
+      : "";
+
+  return (
+    <div className="w-full mx-5 my-2 flex flex-row">
+      <div className="justify-center basis-1/5 rounded bg-base-200 m-4 py-4 px-14 body-height overflow-auto">
+        <div>
+          <label className="label">
+            <span className="label-text">Pick Character</span>
+          </label>
+          <select
+            value={
+              characterState.character !== "None"
+                ? characterState.character.name
+                : characterState.character
+            }
+            onChange={(e) => onSelectCharacter(e.target.value)}
+            className="select select-bordered select-sm w-full max-w-xs"
+          >
+            {characterState.list.map((character) => (
+              <option key={`character_${character}`}>{character}</option>
+            ))}
+          </select>
+        </div>
+        {characterDom}
       </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
+      <div className="basis-4/5 rounded bg-base-200 m-4 p-4 body-height flex flex-col">
+        <div>status: {connectionStatus}</div>
+        <div
+          ref={textRef}
+          className="bg-neutral rounded h-96 mx-1 my-4 p-4 flex-auto overflow-auto"
         >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+          {greeting}
+          {text}
+        </div>
+        <textarea
+          value={input}
+          onKeyUp={onInputEnterHandler}
+          onChange={(e) => setInput(e.target.value)}
+          className="w-full h-24 textarea textarea-primary"
+        ></textarea>
+        <div className="my-4">
+          <button
+            className="btn btn-primary w-full"
+            disabled={
+              readyState !== ReadyState.OPEN ||
+              modelState.modelSelected === "None" ||
+              characterState.character === "None" ||
+              modelState.modelLoading === "pending" ||
+              modelState.listLoading === "pending" ||
+              characterState.characterLoading === "pending" ||
+              characterState.listLoading === "pending"
+            }
+            onClick={() => handleClickSendMessage(input, history)}
+          >
+            Enviar
+          </button>
+        </div>
       </div>
-    </main>
-  )
+    </div>
+  );
 }
