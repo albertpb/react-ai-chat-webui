@@ -1,13 +1,18 @@
 "use client";
 
 import Image from "next/image";
-import { createRef } from "react";
+import React, { createRef } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "./store";
 import { useAppDispatch } from "./store/hooks";
 import { loadCharacter } from "./store/characters";
 import { useCallback, useEffect, useState } from "react";
-import { doChat } from "./store/chat";
+import { doChat, resetHistory } from "./store/chat";
+import { ReactMarkdown } from "react-markdown/lib/react-markdown";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import ChatExample from "./components/chat_example";
 
 export default function Home() {
   const characterState = useSelector((state: RootState) => state.character);
@@ -44,6 +49,10 @@ export default function Home() {
     }
   };
 
+  const clearChat = () => {
+    dispatch(resetHistory());
+  };
+
   const characterDom =
     characterState.character !== "None" ? (
       <div className="my-4">
@@ -73,7 +82,9 @@ export default function Home() {
         </div>
         <div className="prose my-4">
           <h4>Example dialogue:</h4>
-          <p>{characterState.character.example_dialogue}</p>
+          <ChatExample
+            chat={characterState.character.example_dialogue}
+          ></ChatExample>
         </div>
       </div>
     ) : null;
@@ -103,7 +114,32 @@ export default function Home() {
                 ></Image>
               </div>
             </div>
-            <div className="chat-bubble chat-bubble-primary">{arr[1]}</div>
+            <div className="chat-bubble chat-bubble-primary">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  code({ node, inline, className, children, ...props }) {
+                    const match = /language-(\w+)/.exec(className || "");
+                    return !inline && match ? (
+                      <SyntaxHighlighter
+                        {...props}
+                        style={oneDark}
+                        language={match[1]}
+                        PreTag="div"
+                      >
+                        {String(children).replace(/\n$/, "")}
+                      </SyntaxHighlighter>
+                    ) : (
+                      <code {...props} className={className}>
+                        {children}
+                      </code>
+                    );
+                  },
+                }}
+              >
+                {arr[1]}
+              </ReactMarkdown>
+            </div>
           </div>
         </div>
       );
@@ -150,22 +186,32 @@ export default function Home() {
           onChange={(e) => setInput(e.target.value)}
           className="w-full h-24 textarea textarea-primary"
         ></textarea>
-        <div className="my-4">
-          <button
-            className="btn btn-primary w-full"
-            disabled={
-              chatState.historyLoading === "pending" ||
-              modelState.modelSelected === "None" ||
-              characterState.character === "None" ||
-              modelState.modelLoading === "pending" ||
-              modelState.listLoading === "pending" ||
-              characterState.characterLoading === "pending" ||
-              characterState.listLoading === "pending"
-            }
-            onClick={() => handleClickSendMessage()}
-          >
-            Enviar
-          </button>
+        <div className="my-4 flex flex-row">
+          <div className="w-2/12">
+            <button
+              className="btn btn-secondary w-full"
+              onClick={() => clearChat()}
+            >
+              Clear
+            </button>
+          </div>
+          <div className="w-10/12 pl-4">
+            <button
+              className="btn btn-primary w-full"
+              disabled={
+                chatState.historyLoading === "pending" ||
+                modelState.modelSelected === "None" ||
+                characterState.character === "None" ||
+                modelState.modelLoading === "pending" ||
+                modelState.listLoading === "pending" ||
+                characterState.characterLoading === "pending" ||
+                characterState.listLoading === "pending"
+              }
+              onClick={() => handleClickSendMessage()}
+            >
+              Send
+            </button>
+          </div>
         </div>
       </div>
     </div>
