@@ -1,6 +1,6 @@
 "use client";
 
-import { createRef } from "react";
+import { createRef, useRef } from "react";
 import Image from "next/image";
 import { useSelector } from "react-redux";
 import { RootState } from "./store";
@@ -17,20 +17,27 @@ export default function Home() {
   const dispatch = useAppDispatch();
   const [input, setInput] = useState<string>("");
   const [history, setHistory] = useState<Record<any, any>[]>([]);
-  const { lastMessage, readyState, sendJsonMessage } = useWebSocket(
-    `${process.env.NEXT_PUBLIC_WSS_HOST}`
+  const historyBuffer = useRef<Record<any, any>[]>([]);
+  const { readyState, sendJsonMessage } = useWebSocket(
+    `${process.env.NEXT_PUBLIC_WSS_HOST}`,
+    {
+      onMessage: (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.event !== "stream_end") {
+          historyBuffer.current = historyBuffer.current.concat(data);
+        }
+
+        if (data.event === "stream_end" || historyBuffer.current.length >= 1) {
+          const newHistory = history.concat(historyBuffer.current);
+          setHistory(newHistory);
+          historyBuffer.current = [];
+          textRef.current?.scrollBy({ top: textRef.current?.scrollHeight });
+        }
+      },
+    }
   );
   const textRef = createRef<HTMLDivElement>();
-
-  useEffect(() => {
-    if (lastMessage !== null) {
-      const data = JSON.parse(lastMessage.data);
-      if (data.event !== "stream_end") {
-        setHistory((prev) => prev.concat(data));
-        textRef.current?.scrollBy({ top: textRef.current?.scrollHeight });
-      }
-    }
-  }, [lastMessage, setHistory, textRef]);
 
   const onSelectCharacter = useCallback(
     (characterName: string) => {
