@@ -162,8 +162,13 @@ export default function Home() {
             onChange={(e) => onSelectCharacter(e.target.value)}
             className="select select-bordered select-sm w-full max-w-xs"
           >
+            <option value="None" disabled>
+              Pick a character
+            </option>
             {characterState.list.map((character) => (
-              <option key={`character_${character}`}>{character}</option>
+              <option key={`character_${character}`} value={character}>
+                {character}
+              </option>
             ))}
           </select>
         </div>
