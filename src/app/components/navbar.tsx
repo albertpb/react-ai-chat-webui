@@ -52,7 +52,6 @@ export default function Navbar() {
           className="select select-bordered select-sm w-full max-w-xs"
           onChange={(e) => dispatch(loadModel(e.target.value))}
         >
-          <option>None</option>
           {modelState.list.map((model) => (
             <option key={model}>{model}</option>
           ))}
