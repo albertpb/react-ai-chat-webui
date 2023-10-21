@@ -9,6 +9,12 @@ import { loadCharacter } from "./store/characters";
 import { useCallback, useEffect, useState } from "react";
 import { useWebSocket } from "react-use-websocket/dist/lib/use-websocket";
 import { ReadyState } from "react-use-websocket";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import ChatExample from "./components/chat_example";
+import TextMarkdown from "./components/text_markdown";
 
 export default function Home() {
   const characterState = useSelector((state: RootState) => state.character);
@@ -86,7 +92,7 @@ export default function Home() {
           mode: "chat",
           stop_at_newline: false,
           chat_generation_attempts: 1,
-          "chat-instruct_command": ``,
+          "chat-instruct_command": `Continue the chat dialogue below. Write a single reply for the character "<|character|>".\n\n<|prompt|>`,
           preset: "None",
           do_sample: true,
           temperature: 0.7,
@@ -103,14 +109,14 @@ export default function Home() {
           no_repeat_ngram_size: 0,
           num_beams: 1,
           penalty_alpha: 0,
-          length_penalty: 1,
+          length_penalty: 0,
           early_stopping: false,
           mirostat_mode: 0,
           mirostat_tau: 5,
           mirostat_eta: 0.1,
           seed: -1,
           add_bos_token: true,
-          truncation_length: 2048,
+          truncation_length: 25000,
           ban_eso_token: false,
           skip_special_tokens: true,
           stopping_strings: [],
@@ -157,7 +163,9 @@ export default function Home() {
         </div>
         <div className="prose my-4">
           <h4>Example dialogue:</h4>
-          <p>{characterState.character.example_dialogue}</p>
+          <ChatExample
+            chat={characterState.character.example_dialogue}
+          ></ChatExample>
         </div>
       </div>
     ) : null;
@@ -178,7 +186,7 @@ export default function Home() {
                 <div key={`chat_${indx}`}>
                   <div className="chat chat-end">
                     <div className="chat-bubble chat-bubble-secondary">
-                      {arr[0]}
+                      <TextMarkdown>{arr[0]}</TextMarkdown>
                     </div>
                   </div>
                   <div className="chat chat-start">
@@ -195,7 +203,7 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="chat-bubble chat-bubble-primary">
-                      {arr[1]}
+                      <TextMarkdown>{arr[1]}</TextMarkdown>
                     </div>
                   </div>
                 </div>
@@ -221,8 +229,11 @@ export default function Home() {
             onChange={(e) => onSelectCharacter(e.target.value)}
             className="select select-bordered select-sm w-full max-w-xs"
           >
+            <option value="None">Pick a character</option>
             {characterState.list.map((character) => (
-              <option key={`character_${character}`}>{character}</option>
+              <option key={`character_${character}`} value={character}>
+                {character}
+              </option>
             ))}
           </select>
         </div>
