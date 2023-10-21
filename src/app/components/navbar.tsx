@@ -19,8 +19,6 @@ export default function Navbar() {
     (mode: Mode) => {
       if (mode === "Chat") {
         router.push("/");
-      } else {
-        router.push(mode.toLowerCase());
       }
     },
     [router]

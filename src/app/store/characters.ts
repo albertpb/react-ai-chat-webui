@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 import { LoadState } from ".";
-import { resetHistory } from "./chat";
 
 export const getCharacterList = createAsyncThunk(
   "characters/getList",
@@ -16,7 +15,7 @@ export const getCharacterList = createAsyncThunk(
 
 export const loadCharacter = createAsyncThunk(
   "character/loadCharacter",
-  async (name: string, api): Promise<Character> => {
+  async (name: string): Promise<Character> => {
     const response = await axios.get(
       `${process.env.NEXT_PUBLIC_API_HOST}/characters`,
       {
@@ -25,8 +24,6 @@ export const loadCharacter = createAsyncThunk(
         },
       }
     );
-
-    api.dispatch(resetHistory());
 
     return {
       ...response.data.results.data,

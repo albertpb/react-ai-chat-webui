@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import { LoadState } from ".";
-import { resetHistory } from "./chat";
 
 export const getModelList = createAsyncThunk(
   "model/getModelList",
@@ -33,7 +32,7 @@ export const getModelInfo = createAsyncThunk(
 
 export const loadModel = createAsyncThunk(
   "model/loadModel",
-  async (modelName: string, api): Promise<ModelInfo> => {
+  async (modelName: string): Promise<ModelInfo> => {
     const response = await axios.post(
       `${process.env.NEXT_PUBLIC_API_HOST}/model`,
       {
@@ -57,8 +56,6 @@ export const loadModel = createAsyncThunk(
         },
       }
     );
-
-    api.dispatch(resetHistory());
 
     return response.data.result;
   }

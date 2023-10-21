@@ -20,8 +20,8 @@ export const doChat = createAsyncThunk(
       `${process.env.NEXT_PUBLIC_API_HOST}/chat`,
       {
         user_input: prompt,
-        max_new_tokens: 2000,
-        history: state.chat.history,
+        max_new_tokens: 250,
+        history: state.chat,
         character,
         instruction_template: "Vicuna-v1.1",
         your_name: "You",
@@ -30,7 +30,7 @@ export const doChat = createAsyncThunk(
         mode: "chat",
         stop_at_newline: false,
         chat_generation_attempts: 1,
-        "chat-instruct_command": `Continue the chat dialogue below. Write a single reply for the character "<|character|>".\n\n<|prompt|>`,
+        "chat-instruct_command": "",
         preset: "None",
         do_sample: true,
         temperature: 0.7,
@@ -47,21 +47,21 @@ export const doChat = createAsyncThunk(
         no_repeat_ngram_size: 0,
         num_beams: 1,
         penalty_alpha: 0,
-        length_penalty: 0,
+        length_penalty: 1,
         early_stopping: false,
         mirostat_mode: 0,
         mirostat_tau: 5,
         mirostat_eta: 0.1,
         seed: -1,
         add_bos_token: true,
-        truncation_length: 25000,
+        truncation_length: 2048,
         ban_eso_token: false,
         skip_special_tokens: true,
         stopping_strings: [],
       }
     );
 
-    return response.data.results[0].history;
+    return response.data.results;
   }
 );
 
@@ -71,13 +71,11 @@ export interface History {
 }
 
 interface ChatState {
-  continue: boolean;
   history: History;
   historyLoading: LoadState;
 }
 
 const initialState: ChatState = {
-  continue: false,
   history: {
     internal: [],
     visible: [],
@@ -88,14 +86,7 @@ const initialState: ChatState = {
 export const chatSlice = createSlice({
   name: "chat",
   initialState,
-  reducers: {
-    resetHistory: (state) => {
-      state.history = {
-        internal: [],
-        visible: [],
-      };
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder.addCase(doChat.rejected, (state) => {
       state.historyLoading = "failed";
@@ -106,9 +97,6 @@ export const chatSlice = createSlice({
     builder.addCase(doChat.fulfilled, (state, payload) => {
       state.historyLoading = "succeeded";
       state.history = payload.payload;
-      state.continue = true;
     });
   },
 });
-
-export const { resetHistory } = chatSlice.actions;

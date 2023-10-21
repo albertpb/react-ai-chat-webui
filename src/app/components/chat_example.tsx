@@ -1,8 +1,7 @@
-import Image from "next/image";
-import { ReactMarkdown } from "react-markdown/lib/react-markdown";
+import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import SyntaxHighlighter from "react-syntax-highlighter/dist/esm/default-highlight";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { oneDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
 
 interface ChatExampleProps {
   chat: string;
@@ -21,14 +20,15 @@ export default function ChatExample({ chat }: ChatExampleProps) {
     if (chat.startsWith("{{char}}")) {
       return (
         <div key={`chat_example_${idx}`} className="text-sm">
-          <ReactMarkdown
+          <Markdown
             remarkPlugins={[remarkGfm]}
             components={{
-              code({ node, inline, className, children, ...props }) {
+              code(props) {
+                const { children, className, node, ...rest } = props;
                 const match = /language-(\w+)/.exec(className || "");
-                return !inline && match ? (
+                return match ? (
                   <SyntaxHighlighter
-                    {...props}
+                    {...rest}
                     style={oneDark}
                     language={match[1]}
                     PreTag="div"
@@ -36,7 +36,7 @@ export default function ChatExample({ chat }: ChatExampleProps) {
                     {String(children).replace(/\n$/, "")}
                   </SyntaxHighlighter>
                 ) : (
-                  <code {...props} className={className}>
+                  <code {...rest} className={className}>
                     {children}
                   </code>
                 );
@@ -44,7 +44,7 @@ export default function ChatExample({ chat }: ChatExampleProps) {
             }}
           >
             {chat}
-          </ReactMarkdown>
+          </Markdown>
         </div>
       );
     }
