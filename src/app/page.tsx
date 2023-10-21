@@ -9,10 +9,6 @@ import { loadCharacter } from "./store/characters";
 import { useCallback, useEffect, useState } from "react";
 import { useWebSocket } from "react-use-websocket/dist/lib/use-websocket";
 import { ReadyState } from "react-use-websocket";
-import Markdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import ChatExample from "./components/chat_example";
 import TextMarkdown from "./components/text_markdown";
 
