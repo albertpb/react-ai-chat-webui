@@ -26,7 +26,7 @@ npm run start
 
 ---
 
-In Oobabooga to able to get the characters, You need to download and replace [blocking_api.py](https://raw.githubusercontent.com/oobabooga/text-generation-webui/3655bed3f2d5625b50b04893df025872312c1b81/extensions/api/blocking_api.py) into text-generation-webui\extensions\api.
+In Oobabooga to able to get the characters, You need to download and replace [blocking_api.py](https://gist.github.com/albertpb/e393cffe17e42e37bc007a99f9175ab5) into text-generation-webui\extensions\api.
 
 Start Oobabooga with --api
 

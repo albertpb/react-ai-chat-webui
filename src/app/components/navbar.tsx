@@ -20,6 +20,9 @@ export default function Navbar() {
       if (mode === "Chat") {
         router.push("/");
       }
+      if (mode === "Default") {
+        router.push("/prompt");
+      }
     },
     [router]
   );

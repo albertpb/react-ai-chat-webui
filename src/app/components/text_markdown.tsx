@@ -2,12 +2,15 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import SyntaxHighlighter from "react-syntax-highlighter/dist/esm/default-highlight";
 import { oneDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
+import he from "he";
 
 export default function TextMarkdown({
   children,
 }: {
-  children: string | null | undefined;
+  children: React.ReactNode;
 }) {
+  const text = typeof children === "string" ? he.decode(children) : "";
+
   return (
     <Markdown
       remarkPlugins={[remarkGfm]}
@@ -22,17 +25,17 @@ export default function TextMarkdown({
               language={match[1]}
               PreTag="div"
             >
-              {String(children).replace(/\n$/, "")}
+              {text}
             </SyntaxHighlighter>
           ) : (
             <code {...rest} className={className}>
-              {children}
+              {text}
             </code>
           );
         },
       }}
     >
-      {children}
+      {text}
     </Markdown>
   );
 }
